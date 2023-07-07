@@ -2,10 +2,9 @@ package texteditor;
 
 import java.awt.*;
 import javax.swing.*;
-
+import javax.swing.filechooser.FileNameExtensionFilter;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
-
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -16,9 +15,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
 import java.awt.event.ActionEvent;
-
+import com.inet.jortho.*;
 
 public class MainWindow extends javax.swing.JFrame{
 	
@@ -40,28 +41,55 @@ public class MainWindow extends javax.swing.JFrame{
 	public ImageIcon moon= new ImageIcon("res/moon.png");
 	public ImageIcon exitapp= new ImageIcon("res/exit.png");
 	public JTextPane textPane = new JTextPane();
-	public String selectedText, getText, fileName, text;
+	public String selectedText, getText, fileName, text, dictionaries = "dictionaries/";
+	
 	public JFileChooser jfile_open=new JFileChooser("Open");
+	public File file;
+
+	public JMenuItem file_save = new JMenuItem("Save");
+	
 	public static int i, j;
 	public static int len;
 	public static char ch;
 	public static char ch2;
-	public int ifile;
+	public int ifile=1;
 	public static String Laf="com.formdev.flatlaf.themes.FlatMacLightLaf";
 	
 	
 	//MAIN FUNCTIONS
-		public void initComponents() {
+		public void initComponents() {            
+			
+			SpellChecker.setUserDictionaryProvider(new FileUserDictionary());
+			ClassLoader classLoader = MainWindow.class.getClassLoader();
+			URL url = classLoader.getResource("dictionaries/dictionary_en.ortho");
+			SpellChecker.registerDictionaries(url, "en", "en");
+	        
+			SpellChecker.register(textPane);
+	        SpellCheckerOptions sco = new SpellCheckerOptions();
+	        sco.setCaseSensitive(false);
+	        sco.setSuggestionsLimitMenu(15);
+	        sco.setIgnoreAllCapsWords(true);
+	        sco.setIgnoreWordsWithNumbers(true);
+	        sco.setIgnoreCapitalization(true);
+	        SpellChecker.getOptions();
+	    
+			
 		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 		setSize(1300, 800);
         setTitle("SnowflakesEditor");
         setIconImage(icon.getImage());
-        getContentPane().setBackground(mbg);
+        
         
         
         
         JScrollPane textScroll=new JScrollPane(textPane);
         getContentPane().add(textScroll, BorderLayout.CENTER);
+        
+        sco.setSuggestionsLimitMenu(5);
+
+        JPopupMenu popup = SpellChecker.createCheckerPopup(sco);
+        textPane.setComponentPopupMenu(popup);
+        
         
         JToolBar toolBar = new JToolBar();
         getContentPane().add(toolBar, BorderLayout.NORTH);
@@ -187,7 +215,8 @@ public class MainWindow extends javax.swing.JFrame{
 			public void actionPerformed(ActionEvent e) {
 				ifile= jfile_open.showOpenDialog(null);
 				if(ifile== JFileChooser.APPROVE_OPTION) {
-				File file=new File(jfile_open.getSelectedFile().toString());
+					file_save.setEnabled(true);
+				file=new File(jfile_open.getSelectedFile().toString());
 				fileName=file.getName();
 				setTitle("Snowflakes Editor - "+fileName);
 				try {
@@ -217,19 +246,54 @@ public class MainWindow extends javax.swing.JFrame{
 		file_open.setIcon(open);
 		menu_file.add(file_open);
 		
-		JMenuItem file_save = new JMenuItem("Save");
+		//FILE SAVE
+		
+		file_save.setEnabled(false); //default state
 		file_save.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				System.out.println("SAVE");			}
+				if(ifile==JFileChooser.APPROVE_OPTION) {
+				try {
+			        FileWriter writer = new FileWriter(file);
+			        writer.write(textPane.getText());
+			        writer.close();
+			    } catch (IOException e1) {
+			        e1.printStackTrace();
+			    }	
+				}
+				else {
+					JOptionPane.showMessageDialog(null, "Snowflaked Editor: Uhm, no file is open! \n Please try again! \n ERROR CODE: NOFILE002", "ERROR - No file opened", JOptionPane.ERROR_MESSAGE);
+				}
+				}
+			
 		});
 		
 		file_save.setIcon(save);
 		menu_file.add(file_save);
 		
+		//SAVE AS
 		JMenuItem file_saveas = new JMenuItem("Save As");
-		file_save.addActionListener(new ActionListener() {
+		file_saveas.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				System.out.println("SAVE AS");			}
+				JFileChooser Jfile_save = new JFileChooser();
+				//FILTER TO TEXT FILE AND DEFAULT FILE NAME
+				Jfile_save.setSelectedFile(new File("TextFile.txt"));
+				Jfile_save.setFileFilter(new FileNameExtensionFilter("Text File", "txt"));
+				int result = Jfile_save.showSaveDialog(null);
+				if (result == JFileChooser.APPROVE_OPTION) {
+					file_save.setEnabled(true);
+				    file = Jfile_save.getSelectedFile();
+				    ifile=0;
+				    fileName=file.getName();
+					setTitle("Snowflakes Editor - "+fileName);
+				    try {
+				        FileWriter writer = new FileWriter(file);
+				        writer.write(textPane.getText());
+				        writer.close();
+				    } catch (IOException e2) {
+				        e2.printStackTrace();
+				    }
+				}	
+				}
 		});
 		
 		file_saveas.setIcon(save);
