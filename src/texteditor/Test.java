@@ -1,15 +1,22 @@
 package texteditor;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextPane;
+import javax.swing.WindowConstants;
+
 public class Test extends JFrame implements ActionListener {
     /**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 5098077681666028778L;
 	private JTextPane textPane;
@@ -17,7 +24,7 @@ public class Test extends JFrame implements ActionListener {
 
     public Test() {
         super("Text Pane Example");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(300, 200);
 
         textPane = new JTextPane();
@@ -31,7 +38,8 @@ public class Test extends JFrame implements ActionListener {
         setContentPane(panel);
     }
 
-    public void actionPerformed(ActionEvent e) {
+    @Override
+	public void actionPerformed(ActionEvent e) {
         if (e.getSource() == cutButton) {
             String selectedText = textPane.getSelectedText();
             if (selectedText != null) {
