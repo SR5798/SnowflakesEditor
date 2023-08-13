@@ -1,0 +1,1161 @@
+package texteditor;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+//IO
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+//NET
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+//JAVAX
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
+import javax.swing.JTextPane;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.Document;
+import javax.swing.undo.UndoManager;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SpinnerModel;
+//FLATLAF
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
+//JORTHO
+import com.inet.jortho.FileUserDictionary;
+import com.inet.jortho.SpellChecker;
+import com.inet.jortho.SpellCheckerOptions;
+
+import org.apache.pdfbox.*;
+import javax.swing.SpringLayout;
+import javax.swing.SwingConstants;
+import java.awt.Component;
+
+
+public class MainWindow extends javax.swing.JFrame{
+
+
+		/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+
+    //IMAGES
+	public ImageIcon icon= new ImageIcon("res/c_icon.png");
+	public ImageIcon open= new ImageIcon("res/open.png");
+	public ImageIcon save= new ImageIcon("res/save.png");
+	public ImageIcon tcut= new ImageIcon("res/cut.png");
+	public ImageIcon tcopy= new ImageIcon("res/copy.png");
+	public ImageIcon tpaste= new ImageIcon("res/paste.png");
+	public ImageIcon boticon= new ImageIcon("res/boticon.png");
+	public ImageIcon Aa= new ImageIcon("res/Aa.png");
+	public ImageIcon AA= new ImageIcon("res/UAA.png");
+	public ImageIcon aa= new ImageIcon("res/Laa.png");
+	public ImageIcon moon= new ImageIcon("res/moon.png");
+	public ImageIcon exitapp= new ImageIcon("res/exit.png");
+	public ImageIcon undo= new ImageIcon("res/undo.png");
+	public ImageIcon redo= new ImageIcon("res/redo.png");
+	public ImageIcon plus=new ImageIcon("res/zoomh.png");
+	public ImageIcon minus=new ImageIcon("res/zooml.png");
+	public ImageIcon mutekey=new ImageIcon("res/mutekey.png");
+	public ImageIcon close=new ImageIcon("res/x.png");
+	//REFERENCE & OBJ
+	public JTextPane textPane = new JTextPane();
+	public UndoManager undoManager = new UndoManager();
+//	public JFileChooser jfile_open=new JFileChooser("Open");
+	public File file;
+	public JMenuItem file_save = new JMenuItem("Save");
+	public JButton bar_save=new JButton();
+	public JButton undoButton = new JButton();
+    public JButton redoButton = new JButton();
+    public JDialog dialog = new JDialog(MainWindow.this, "Snowflakes Editor", true);
+    public JTextPane sp_resultPane = new JTextPane();
+    //MISC
+    public File typsnd = new File("snd/keytype.wav");
+    public JToggleButton tglkeymute = new JToggleButton();
+    public JToggleButton tglTheme = new JToggleButton();
+    SpinnerModel model = new SpinnerNumberModel(12, 0, 1000, 1);
+    public JSpinner fontSize = new JSpinner(model);
+    //STRINGS
+	public String selectedText, getText, fileName, text, dictionaries = "dictionaries/";
+	public static String Laf="com.formdev.flatlaf.themes.FlatMacLightLaf";
+	//PRIMITIVE
+	public static int i, j;
+	public static int len;
+	public static char ch;
+	public static char ch2;
+	public int ifile=1;
+	public boolean saved=false, plsnd=true;
+	public String PALMAPIKEY=System.getenv("PALM_API_KEY");
+	
+	
+	
+	
+	
+	//MAIN FUNCTIONS
+		public void initComponents() {			
+			System.out.println("initComponents responding - STAGE SPECIAL - EDITOR MAIN");
+			System.out.println("Initializing Spellcheck - STAGE 2 - 1/2");
+			//SPELL CHECK
+			SpellChecker.setUserDictionaryProvider(new FileUserDictionary());
+			ClassLoader classLoader = MainWindow.class.getClassLoader();
+			URL url = classLoader.getResource("dictionaries/dictionary_en.ortho");
+			SpellChecker.registerDictionaries(url, "en", "en");
+
+			SpellChecker.register(textPane);
+	        SpellCheckerOptions sco = new SpellCheckerOptions();
+	        sco.setCaseSensitive(false);
+	        sco.setSuggestionsLimitMenu(15);
+	        sco.setIgnoreAllCapsWords(true);
+	        sco.setIgnoreWordsWithNumbers(true);
+	        sco.setIgnoreCapitalization(true);
+	        sco.setSuggestionsLimitMenu(5);
+	        SpellChecker.getOptions();
+	        System.out.println("Spellcheck Initialized - STAGE 2 - 2/2");
+	        //BASIC FRAME CONFIG
+		setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
+		setSize(1300, 800);
+        setTitle("SnowflakesEditor");
+        setIconImage(icon.getImage());
+        //TABS
+        System.out.println("Setting up editor - STAGE 3 -1/2");
+        JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+        getContentPane().add(tabbedPane, BorderLayout.NORTH);
+
+//TEXTPANE
+        JScrollPane textScroll=new JScrollPane(textPane);
+        getContentPane().add(textScroll, BorderLayout.CENTER);
+
+        //SPELL CHECKER POPUP
+        JPopupMenu popup = SpellChecker.createCheckerPopup(sco);
+        textPane.addMouseListener(new MouseAdapter() {
+            @Override
+			public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    popup.show(textPane, e.getX(), e.getY());
+                }
+            }
+        });
+
+        //HOME TAB TOOLBAR VAR NAME: tooBar
+        JToolBar toolBar = new JToolBar();
+        tabbedPane.addTab("Home", null, toolBar, null);
+
+        JButton cut = new JButton("");
+        cut.addActionListener(new ActionListener() {
+        	@Override
+			public void actionPerformed(ActionEvent e) {
+        		textPane.cut();
+
+        	}
+        });
+        cut.setToolTipText("Cut");
+        cut.setIcon(tcut);
+        toolBar.add(cut);
+
+        JButton copy = new JButton("");
+        copy.addActionListener(new ActionListener() {
+        	@Override
+			public void actionPerformed(ActionEvent e) {
+        		textPane.copy();
+        	}
+        });
+        copy.setToolTipText("Copy");
+        copy.setIcon(tcopy);
+        toolBar.add(copy);
+
+        JButton paste = new JButton("");
+        paste.addActionListener(new ActionListener() {
+        	@Override
+			public void actionPerformed(ActionEvent e) {
+        		textPane.paste();        	}
+        });
+        paste.setToolTipText("Paste");
+
+        paste.setIcon(tpaste);
+        toolBar.add(paste);
+
+      //UNDO&REDO
+        Document document = textPane.getDocument();
+
+        document.addUndoableEditListener(undoManager);
+
+        undoButton.addActionListener(e -> {
+            if (undoManager.canUndo()) {
+                undoManager.undo();
+            }
+        });
+
+        redoButton.addActionListener(e -> {
+            if (undoManager.canRedo()) {
+                undoManager.redo();
+            }
+        });
+        undoButton.setIcon(undo);
+        redoButton.setIcon(redo);
+        undoButton.setToolTipText("Undo");
+        redoButton.setToolTipText("Redo");
+        toolBar.add(undoButton);
+        toolBar.add(redoButton);
+        //UNDO KEY STROKES
+        textPane.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+
+                if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_Z) {
+                    if (undoManager.canUndo()) {
+                        undoManager.undo();
+                    }
+                }
+
+                if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_Y) {
+                    if (undoManager.canRedo()) {
+                        undoManager.redo();
+                    }
+                }
+            }
+        });
+//end of undo redo
+
+        JButton wordUpcase = new JButton("");
+        wordUpcase.addActionListener(new ActionListener() {
+        	@Override
+			public void actionPerformed(ActionEvent e) {
+        		selectedText = textPane.getSelectedText();
+        		if (selectedText != null) {
+        			text=MainWindow.upCase(selectedText);
+        			textPane.replaceSelection(text);
+                }
+
+        	}
+        });
+        wordUpcase.setToolTipText("Capitalize First Letter");
+
+        wordUpcase.setIcon(Aa);
+        toolBar.add(wordUpcase);
+
+        //SNOWFLAKES MENU
+        JToolBar snowflakes = new JToolBar();
+        tabbedPane.addTab("Snowflakes", null, snowflakes, "Snowflakes Elements");
+        
+        
+        //PREFS MENU
+        JToolBar prefs = new JToolBar();
+        tabbedPane.addTab("Preferences", null, prefs, "Preferences");
+        
+        tglTheme.addActionListener(new ActionListener() {
+            @Override
+			public void actionPerformed(ActionEvent e) {
+                tgTheme();
+            }
+        });
+        prefs.add(tglTheme);
+        tglTheme.setIcon(moon);
+        tglTheme.setToolTipText("Dark Mode (Ctrl + D)");
+        
+        JLabel fslabel=new JLabel("   Font Size ");
+        prefs.add(fslabel);
+        
+        //SPINNER
+      fontSize.setMaximumSize(new Dimension(70, 32767));
+      fontSize.setPreferredSize(new Dimension(20, prefs.getHeight()));
+       
+        fontSize.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent e) {
+                int size = (int) fontSize.getValue();
+                Font font = textPane.getFont();
+                textPane.setFont(new Font(font.getName(), font.getStyle(), size));
+            }
+        });
+
+        prefs.add(fontSize); 
+     
+        
+        JButton prefs_insize = new JButton("");
+        prefs_insize.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	incfont();
+            }
+        });
+        prefs_insize.setIcon(plus);
+        prefs_insize.setToolTipText("Increase Font Size (Ctrl + +");
+        prefs.add(prefs_insize);
+        
+        JButton prefs_desize = new JButton("");
+        prefs_desize.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	decfont();
+            }
+        });
+        prefs_desize.setIcon(minus);
+        prefs_desize.setToolTipText("Decrease Font Size (Ctrl + -");
+        prefs.add(prefs_desize);
+        
+        //FONTS
+        JComboBox<String> fontComboBox = new JComboBox<String>();
+        fontComboBox.setMaximumSize(new Dimension(250, 32767));
+        String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        for (String font : fonts) {
+            fontComboBox.addItem(font);
+        }
+        Font currentFont = textPane.getFont();
+        fontComboBox.setSelectedItem(currentFont.getFontName());
+
+        fontComboBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String fontName = (String)fontComboBox.getSelectedItem();
+                Font font = new Font(fontName, Font.PLAIN, (int)fontSize.getValue());
+                textPane.setFont(font);
+             
+            }
+        });
+
+        prefs.add(fontComboBox);
+        
+                fontComboBox.setPreferredSize(new Dimension(35, 22));
+                
+                
+                prefs.add(tglkeymute);
+                tglkeymute.setIcon(mutekey);
+                tglkeymute.setToolTipText("Mute Key Sounds (Ctrl + M)");
+                
+                //SHORTCUTS FOR BUTTONS
+                textPane.addKeyListener(new KeyAdapter() {
+                    @Override
+                    public void keyPressed(KeyEvent e) {
+
+                        if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_M) {
+                            if(tglkeymute.isSelected()) tglkeymute.setSelected(false);
+                            else tglkeymute.setSelected(true);
+                        }
+
+                        if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_D) {
+                        	if(tglTheme.isSelected()) tglTheme.setSelected(false);
+                            else tglTheme.setSelected(true);
+                        	tgTheme();
+                        }
+                        if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_EQUALS) {
+                        	incfont();
+                        }
+                        if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_MINUS) {
+                        	decfont();
+                        }
+                    }
+                });
+        
+        //RC MENU
+        JPopupMenu rightClickMenu = new JPopupMenu();
+        JMenuItem cutMenuItem = new JMenuItem("Cut");
+        JMenuItem copyMenuItem = new JMenuItem("Copy");
+        JMenuItem pasteMenuItem = new JMenuItem("Paste");
+
+        cutMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textPane.cut();
+            }
+        });
+
+        copyMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textPane.copy();
+            }
+        });
+
+        pasteMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textPane.paste();
+            }
+        });
+
+        rightClickMenu.add(cutMenuItem);
+        rightClickMenu.add(copyMenuItem);
+        rightClickMenu.add(pasteMenuItem);
+        textPane.setComponentPopupMenu(rightClickMenu);  
+        //END OF RC MENU
+        
+        JTextArea sp_promptArea;
+	     JButton sp_generate;
+
+	        // Create the side pane
+	        JPanel sidePane = new JPanel();
+	        JPanel sidePaneMain = new JPanel();
+	        SpringLayout sl_sidePaneMain = new SpringLayout();
+	        sidePaneMain.setLayout(sl_sidePaneMain);
+	        
+	        JLabel sp_labelheading = new JLabel("Snowflakes AI - Powered by PaLM");
+	        sl_sidePaneMain.putConstraint(SpringLayout.NORTH, sp_labelheading, 10, SpringLayout.NORTH, sidePaneMain);
+	        sl_sidePaneMain.putConstraint(SpringLayout.WEST, sp_labelheading, 10, SpringLayout.WEST, sidePaneMain);
+	        sl_sidePaneMain.putConstraint(SpringLayout.EAST, sp_labelheading, -56, SpringLayout.EAST, sidePaneMain);
+	        sp_labelheading.setHorizontalAlignment(SwingConstants.CENTER);
+	        sp_labelheading.setFont(new Font("Corbel", Font.PLAIN, 13));
+	        sidePaneMain.add(sp_labelheading);
+	        sp_promptArea = new JTextArea();
+	        JScrollPane sidePaneScroll=new JScrollPane(sidePane);
+	     //   getContentPane().add(textScroll, BorderLayout.CENTER);
+
+	        sp_promptArea.setToolTipText("Prompt");
+	        sp_promptArea.setLineWrap(true);
+	        sp_generate = new JButton("Generate");
+	        SpringLayout sl_sidePane = new SpringLayout();
+	        sl_sidePane.putConstraint(SpringLayout.WEST, sp_generate, 42, SpringLayout.WEST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, sp_generate, 142, SpringLayout.WEST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, sp_promptArea, 0, SpringLayout.NORTH, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.SOUTH, sp_promptArea, 20, SpringLayout.NORTH, sidePane);
+	        JScrollPane sp_textAreaScroll=new JScrollPane(sp_promptArea);
+	        sl_sidePane.putConstraint(SpringLayout.SOUTH, sp_textAreaScroll, -371, SpringLayout.SOUTH, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, sp_generate, 6, SpringLayout.SOUTH, sp_textAreaScroll);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, sp_textAreaScroll, -10, SpringLayout.EAST, sidePane);
+	      
+	        sidePane.setLayout(sl_sidePane);
+	        sidePane.add(sp_textAreaScroll);
+	        sidePane.add(sp_generate);
+	        JTabbedPane sidePaneTabs = new JTabbedPane(JTabbedPane.TOP);
+	        sl_sidePaneMain.putConstraint(SpringLayout.WEST, sidePaneTabs, 0, SpringLayout.WEST, sidePaneMain);
+	        sl_sidePaneMain.putConstraint(SpringLayout.EAST, sidePaneTabs, 0, SpringLayout.EAST, sidePaneMain);
+	        sl_sidePaneMain.putConstraint(SpringLayout.SOUTH, sp_labelheading, -6, SpringLayout.NORTH, sidePaneTabs);
+	        sl_sidePaneMain.putConstraint(SpringLayout.NORTH, sidePaneTabs, 42, SpringLayout.NORTH, sidePaneMain);
+	        sl_sidePaneMain.putConstraint(SpringLayout.SOUTH, sidePaneTabs, -16, SpringLayout.SOUTH, sidePaneMain);
+	        sidePaneTabs.addTab("Prompt", null, sidePaneScroll, "Generate with Prompt");
+	       // tabbedPane.addTab("Prompt", null, sidePaneScroll, null);)
+	        // Add the panes to the main frame
+	     //   sidePaneMain.add(sidePaneTabs);
+	        sidePaneMain.add(sidePaneTabs);
+	        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, textScroll, sidePaneMain);
+	        
+	        JButton sp_accept = new JButton("Accept");
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, sp_accept, 6, SpringLayout.SOUTH, sp_textAreaScroll);
+	        sl_sidePane.putConstraint(SpringLayout.WEST, sp_accept, -142, SpringLayout.EAST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, sp_accept, -44, SpringLayout.EAST, sidePane);
+	        sp_accept.setMaximumSize(new Dimension(77, 23));
+	        sp_accept.setMinimumSize(new Dimension(77, 23));
+	        sidePane.add(sp_accept);
+	        
+	        JLabel lbl_prompt = new JLabel("Prompt");
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, sp_textAreaScroll, 4, SpringLayout.SOUTH, lbl_prompt);
+	        sl_sidePane.putConstraint(SpringLayout.WEST, sp_textAreaScroll, 0, SpringLayout.WEST, lbl_prompt);
+	        sl_sidePane.putConstraint(SpringLayout.WEST, lbl_prompt, 10, SpringLayout.WEST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, lbl_prompt, -10, SpringLayout.EAST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, lbl_prompt, 10, SpringLayout.NORTH, sidePane);
+	        sidePane.add(lbl_prompt);
+	        
+	       
+	        JScrollPane sp_resultPaneScroll=new JScrollPane(sp_resultPane);
+	        sl_sidePane.putConstraint(SpringLayout.WEST, sp_resultPaneScroll, 10, SpringLayout.WEST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.SOUTH, sp_resultPaneScroll, -10, SpringLayout.SOUTH, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, sp_resultPaneScroll, -10, SpringLayout.EAST, sidePane);
+	        sidePane.add(sp_resultPaneScroll);
+	        
+	        JLabel lbl_result = new JLabel("Result");
+	        sl_sidePane.putConstraint(SpringLayout.SOUTH, lbl_result, -264, SpringLayout.SOUTH, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, sp_resultPaneScroll, 6, SpringLayout.SOUTH, lbl_result);
+	        sl_sidePane.putConstraint(SpringLayout.WEST, lbl_result, 10, SpringLayout.WEST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, lbl_result, 0, SpringLayout.EAST, sp_textAreaScroll);
+	        sidePane.add(lbl_result);
+	        
+	        JCheckBox getCntx = new JCheckBox("Get context from editor");
+	        getCntx.setHorizontalAlignment(SwingConstants.CENTER);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, getCntx, 0, SpringLayout.EAST, sp_textAreaScroll);
+	        sl_sidePane.putConstraint(SpringLayout.WEST, getCntx, 0, SpringLayout.WEST, sp_textAreaScroll);
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, getCntx, 6, SpringLayout.SOUTH, sp_generate);
+	        sidePane.add(getCntx);
+	        
+	        JButton promptClearAll = new JButton("Clear");
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, lbl_result, 6, SpringLayout.SOUTH, promptClearAll);
+	        sl_sidePane.putConstraint(SpringLayout.NORTH, promptClearAll, 6, SpringLayout.SOUTH, getCntx);
+	        sl_sidePane.putConstraint(SpringLayout.WEST, promptClearAll, 120, SpringLayout.WEST, sidePane);
+	        sl_sidePane.putConstraint(SpringLayout.EAST, promptClearAll, -121, SpringLayout.EAST, sidePane);
+	        sidePane.add(promptClearAll);
+	        promptClearAll.addActionListener(new ActionListener() {
+	        	public void actionPerformed(ActionEvent e) {
+	        		sp_promptArea.setText("");
+	        		sp_resultPane.setText("");
+	        	}
+	        });
+	        
+	        JScrollPane impScrollPane = new JScrollPane();
+	        sidePaneTabs.addTab("Improve Text", null, impScrollPane, null);
+	        
+	        JPanel impPanel = new JPanel();
+	        impScrollPane.setViewportView(impPanel);
+	        SpringLayout sl_impPanel = new SpringLayout();
+	        impPanel.setLayout(sl_impPanel);
+	        
+	        JCheckBox crtSpelling = new JCheckBox("Correct Spelling");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, crtSpelling, 10, SpringLayout.NORTH, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, crtSpelling, 33, SpringLayout.WEST, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, crtSpelling, 145, SpringLayout.WEST, impPanel);
+	        crtSpelling.setSelected(true);
+	        impPanel.add(crtSpelling);
+	        
+	        JCheckBox crtGrammar = new JCheckBox("Correct Grammar");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, crtGrammar, 10, SpringLayout.NORTH, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, crtGrammar, 22, SpringLayout.EAST, crtSpelling);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, crtGrammar, -37, SpringLayout.EAST, impPanel);
+	        crtGrammar.setSelected(true);
+	        impPanel.add(crtGrammar);
+	        
+	        JCheckBox impText = new JCheckBox("Improve Text");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impText, 6, SpringLayout.SOUTH, crtSpelling);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, impText, 0, SpringLayout.WEST, crtSpelling);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, impText, 0, SpringLayout.EAST, crtSpelling);
+	        impText.setSelected(true);
+	        impPanel.add(impText);
+	        
+	        JComboBox<String> impChangeTone = new JComboBox<String>();
+	        String tones[]=new String[] {"Null", "AutoTone", "Friendly", "Calm", "Funny", "Witty", "Formal", "Professional", "Happy",
+	        		"Sarcastic", "Inspiring", "Suspense", "Mystery", "Old English (Shakesphearen)", "Legal Jargon", "Confusing", "Professional Author/Writer", "The President", "Mario", "Mark Twain", "Doctor",};
+	        for(String tone:tones) {
+	        	impChangeTone.addItem(tone);
+	        }
+	      //  System.out.println(impChangeTone.getSelectedItem());
+	        
+	        impChangeTone.addItem("Default");
+	        sl_impPanel.putConstraint(SpringLayout.WEST, impChangeTone, 134, SpringLayout.WEST, crtSpelling);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, impChangeTone, 0, SpringLayout.EAST, crtGrammar);
+	        impPanel.add(impChangeTone);
+	        
+	        JCheckBox removePof = new JCheckBox("Remove Pofanity");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impChangeTone, 6, SpringLayout.SOUTH, removePof);
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, removePof, 6, SpringLayout.SOUTH, crtGrammar);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, removePof, 0, SpringLayout.WEST, crtGrammar);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, removePof, 0, SpringLayout.EAST, crtGrammar);
+	        removePof.setSelected(true);
+	        impPanel.add(removePof);
+	        
+	        JLabel changeToneLbl = new JLabel("Change Tone");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, changeToneLbl, 6, SpringLayout.SOUTH, impText);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, changeToneLbl, 0, SpringLayout.WEST, crtSpelling);
+	        sl_impPanel.putConstraint(SpringLayout.SOUTH, changeToneLbl, 0, SpringLayout.SOUTH, impChangeTone);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, changeToneLbl, 0, SpringLayout.EAST, crtSpelling);
+	        impPanel.add(changeToneLbl);
+	        
+	        JLabel cstToneLbl = new JLabel("Custom Tone");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, cstToneLbl, 6, SpringLayout.SOUTH, changeToneLbl);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, cstToneLbl, 33, SpringLayout.WEST, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.SOUTH, cstToneLbl, 29, SpringLayout.SOUTH, changeToneLbl);
+	        impPanel.add(cstToneLbl);
+	        
+	        JTextField cstToneTextField = new JTextField();
+	        sl_impPanel.putConstraint(SpringLayout.EAST, cstToneLbl, -22, SpringLayout.WEST, cstToneTextField);
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, cstToneTextField, 6, SpringLayout.SOUTH, impChangeTone);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, cstToneTextField, 0, SpringLayout.WEST, crtGrammar);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, cstToneTextField, 0, SpringLayout.EAST, crtGrammar);
+	        impPanel.add(cstToneTextField);
+	        cstToneTextField.setColumns(10);
+	        
+	        JTextArea impCstGuideTextArea = new JTextArea();
+	        JScrollPane impCstGuideScroll = new JScrollPane(impCstGuideTextArea);
+	        impPanel.add(impCstGuideScroll);
+	        
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impCstGuideScroll, 149, SpringLayout.NORTH, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, impCstGuideScroll, 33, SpringLayout.WEST, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, impCstGuideScroll, 0, SpringLayout.EAST, crtGrammar);
+	        
+	        JButton impGenBtn = new JButton("Improve");
+	        sl_impPanel.putConstraint(SpringLayout.WEST, impGenBtn, 33, SpringLayout.WEST, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, impGenBtn, -193, SpringLayout.EAST, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.SOUTH, impCstGuideScroll, -6, SpringLayout.NORTH, impGenBtn);
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impGenBtn, 309, SpringLayout.NORTH, impPanel);
+	        impPanel.add(impGenBtn);
+	        
+	        JButton impAcceptBtn = new JButton("Accept");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impAcceptBtn, 6, SpringLayout.SOUTH, impCstGuideScroll);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, impAcceptBtn, 0, SpringLayout.EAST, crtGrammar);
+	        impPanel.add(impAcceptBtn);
+	        
+	        JLabel impResLbl = new JLabel("Result (Improved Text)");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impResLbl, 6, SpringLayout.SOUTH, impGenBtn);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, impResLbl, 0, SpringLayout.WEST, crtSpelling);
+	        impPanel.add(impResLbl);
+	        
+	        JTextPane impResPane = new JTextPane();
+	        JScrollPane impResScroll = new JScrollPane(impResPane);
+	        impPanel.add(impResScroll);
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impResScroll, 6, SpringLayout.SOUTH, impResLbl);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, impResScroll, 33, SpringLayout.WEST, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.SOUTH, impResScroll, -10, SpringLayout.SOUTH, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, impResScroll, 0, SpringLayout.EAST, crtGrammar);
+	       
+	        
+	        JButton impClearBtn = new JButton("Clear");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, impClearBtn, 6, SpringLayout.SOUTH, impCstGuideScroll);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, impClearBtn, 5, SpringLayout.EAST, impGenBtn);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, impClearBtn, -6, SpringLayout.WEST, impAcceptBtn);
+	        impPanel.add(impClearBtn);
+	        
+	        JLabel cstCuideLbl = new JLabel("Custom Guidance");
+	        sl_impPanel.putConstraint(SpringLayout.NORTH, cstCuideLbl, 129, SpringLayout.NORTH, impPanel);
+	        sl_impPanel.putConstraint(SpringLayout.WEST, cstCuideLbl, 0, SpringLayout.WEST, crtSpelling);
+	        sl_impPanel.putConstraint(SpringLayout.SOUTH, cstCuideLbl, -6, SpringLayout.NORTH, impCstGuideScroll);
+	        sl_impPanel.putConstraint(SpringLayout.EAST, cstCuideLbl, 0, SpringLayout.EAST, crtGrammar);
+	        impPanel.add(cstCuideLbl);
+	        
+	        JButton sp_close = new JButton("");
+	        sl_sidePaneMain.putConstraint(SpringLayout.WEST, sp_close, 6, SpringLayout.EAST, sp_labelheading);
+	        sp_close.setIcon(close);
+	        sl_sidePaneMain.putConstraint(SpringLayout.NORTH, sp_close, 10, SpringLayout.NORTH, sidePaneMain);
+	        sl_sidePaneMain.putConstraint(SpringLayout.EAST, sp_close, -10, SpringLayout.EAST, sidePaneMain);
+	        sidePaneMain.add(sp_close);
+	        splitPane.setOneTouchExpandable(true);
+	      //  textScroll.setMinimumSize(new Dimension());
+	     //   sidePaneTabs.setMinimumSize(new Dimension());
+	       // splitPane.setDividerLocation(1.0);
+	     //   System.out.println(1273);
+	     //   System.out.println(textPane.getWidth()-(textPane.getWidth()*0.25));
+	        getContentPane().add(splitPane);
+	        splitPane.setDividerLocation(955);
+	    //    splitPane.setDividerSize(7);
+	       
+	        JToggleButton snowflakes_split=new JToggleButton("");
+	        snowflakes_split.addActionListener(new ActionListener() {
+	            @Override
+				public void actionPerformed(ActionEvent e) {
+	            	if (snowflakes_split.isSelected()) {
+	            		int width=textPane.getWidth();
+		            	splitPane.setDividerLocation(Math.round(width-(width*0.25f)));
+	                } else {
+	                	 splitPane.setDividerLocation(1.0);
+	                }
+	            }
+	        });
+	        snowflakes_split.setIcon(boticon);
+	        snowflakes_split.setToolTipText("Snowflakes AI");
+	        snowflakes.add(snowflakes_split);
+	        
+	        JButton extractPDF=new JButton("EXTRACT");
+	        extractPDF.addActionListener(new ActionListener() {
+	            @Override
+				public void actionPerformed(ActionEvent e) {
+	            	String content="";
+	            	String cpath=getFile();
+	            	if(!cpath.equals("null")) {
+	            		content=PDFOperations.PDFExtract(cpath);
+	            		textPane.replaceSelection(content);
+	            	}
+	            	else
+	            		JOptionPane.showMessageDialog(null, "Uhm, I didn't get any file! \n Please try again! \n ERROR CODE: NOFILE002", "SnowflakesEditor - ERROR - No file selected", JOptionPane.ERROR_MESSAGE);
+	            }
+	        });
+	        snowflakes.add(extractPDF);
+
+	        // Add action listeners to the buttons
+	        sp_close.addActionListener(new ActionListener() {
+	            public void actionPerformed(ActionEvent e) {
+	                splitPane.setDividerLocation(1.0);
+	                snowflakes_split.setSelected(false);
+	            }
+	        });
+	        sp_generate.addActionListener(new ActionListener() {
+	            public void actionPerformed(ActionEvent e) {
+	                String promptText=sp_promptArea.getText(), CNTX;
+	                if(getCntx.isEnabled()==true) {
+	                	CNTX=textPane.getText();
+	                	palmpy(promptText, "Get Context from:"+CNTX);
+	                }
+	                else
+	                	palmpy(promptText, "");
+	            }
+	        });
+	        impGenBtn.addActionListener(new ActionListener() {
+	            public void actionPerformed(ActionEvent e) {
+	                String GUIDE="";
+	                if(crtSpelling.isEnabled()==true) GUIDE="Correct Spelling";
+	                if(crtGrammar.isEnabled()==true) GUIDE+=", Correct Grammar";
+	                if(impText.isEnabled()==true) GUIDE+=", Improve text to be better";
+	                if(removePof.isEnabled()==true) GUIDE+=", Remove Pofanity";
+	                if(!impChangeTone.getSelectedItem().equals("Null")) {
+	                	if(impChangeTone.getSelectedItem().equals("Auto Tone"))
+	                		GUIDE+="Auto change the tone to suit the text better. eg: Change tone to Funny if it seems like a joke or change to suspense if it seems like a mystery story and etc.";
+	                	else
+	                		GUIDE+="Change the tone to "+impChangeTone.getSelectedItem();
+	                } 
+	                if(!cstToneTextField.getText().equals("")) {
+	                	GUIDE+="Change the tone of the text to"+cstToneTextField.getText();
+	                }
+	                impResPane.setText("");
+	                ProcessBuilder processBuilder = new ProcessBuilder("python", "app.py", GUIDE+","+impCstGuideTextArea.getText(), "Text:"+textPane.getText());
+	                String outputString="";
+	                processBuilder.redirectErrorStream(true);
+	                Process process;  //String response="";
+	        		try {
+	        			process = processBuilder.start();
+	        			 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+	        		        String line;
+	        		       while ((line = reader.readLine()) != null) {
+	        		    	   outputString+=line+"\n\n";
+	        		        }
+	        		       outputString=outputString.replaceAll("(?m)^[ \t]*\r?\n{2,}", "\n");
+	        		       impResPane.setText(outputString);
+	        		} catch (IOException e1) {
+	        			// TODO Auto-generated catch block
+	        			e1.printStackTrace();
+	        		}
+	            }
+	        });
+	        impClearBtn.addActionListener(new ActionListener() {
+	            public void actionPerformed(ActionEvent e) {
+	               impResPane.setText("");
+	               
+	            }
+	        });
+	        impAcceptBtn.addActionListener(new ActionListener() {
+	            public void actionPerformed(ActionEvent e) {
+	               textPane.setText(impResPane.getText());
+	            }
+	        });
+	        
+	        sp_accept.addActionListener(new ActionListener() {
+	            public void actionPerformed(ActionEvent e) {
+	                String resultText = sp_resultPane.getText();
+	                textPane.replaceSelection(resultText);
+	            }
+	        });
+	        impCstGuideTextArea.setLineWrap(true);
+	        
+	        SwingUtilities.invokeLater(() -> {
+	        	System.out.println("INVOKE LATER RESPONDING - SPECIAL");
+	            splitPane.setDividerLocation(1.0);
+	        });
+	        System.out.println("Editor set up successfully - STAGE 3 - 2/2");
+	}
+		
+//MENU BAR
+		public MainWindow() {
+			DocumentListener documentListener = new DocumentListener() {
+	            public void changedUpdate(DocumentEvent e) {
+	               // titleSet();
+	            }
+	            public void removeUpdate(DocumentEvent e) {
+	                titleSet();
+	            }
+	            public void insertUpdate(DocumentEvent e) {
+	                titleSet();
+	                saved=false;
+	            }
+	            //
+	        };
+
+
+		JMenuBar menu_bar = new JMenuBar();
+		setJMenuBar(menu_bar);
+
+		JMenu menu_file = new JMenu("File");
+		menu_bar.add(menu_file);
+
+		JMenuItem file_open = new JMenuItem("Open");
+		//OPEN FILE
+		file_open.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				open();
+				textPane.getDocument().addUndoableEditListener(undoManager);
+				textPane.getDocument().addDocumentListener(documentListener);
+			}
+		});
+		//end of OPEN FILE
+
+		file_open.setIcon(open);
+		menu_file.add(file_open);
+
+		//FILE SAVE
+
+		file_save.setEnabled(false); //default state
+		file_save.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				save();
+			}
+		});
+
+		file_save.setIcon(save);
+		menu_file.add(file_save);
+
+//CTRL S
+		bar_save.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				save();
+			}
+		});
+		menu_bar.add(bar_save);
+		bar_save.setIcon(save);
+		bar_save.setEnabled(false);
+
+		addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                if(saved==false && !textPane.getText().equals("")) {
+                	JButton saveButton = new JButton("Save");
+                    JButton dontSaveButton = new JButton("Don't Save");
+                    JButton cancelButton = new JButton("Cancel");
+                    JLabel savemsg=new JLabel("Hey! It looks like you didn't save your file!");
+                    JLabel savemsg2=new JLabel("Do you want to save it?");
+                    saveButton.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                        	dialog.dispose();
+            	        	if(ifile==JFileChooser.APPROVE_OPTION) {	
+            	        			save();			        
+            	        	}
+            	        	else {
+            	        		saveas();
+            	        	}
+                        }	
+                    });
+
+                    dontSaveButton.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            System.exit(0);
+                        }
+                    });
+
+                    cancelButton.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            dialog.dispose();
+                        }
+                    });
+                    JPanel panel = new JPanel();
+                    savemsg.setBounds(47, 10, 277, 14);
+                    savemsg2.setBounds(47, 31, 277, 14);
+                    saveButton.setBounds(17, 63, 89, 23);
+                    dontSaveButton.setBounds(116, 63, 108, 23);
+                    cancelButton.setBounds(235, 63, 89, 23);
+                    panel.setLayout(null);
+                    
+                    JLabel iconLabel = new JLabel();
+                    iconLabel.setBounds(17, 11, 24, 41);
+                    iconLabel.setIcon(save);
+                    panel.add(iconLabel);
+                    panel.add(saveButton);
+                    panel.add(dontSaveButton);
+                    panel.add(cancelButton);
+                    panel.add(savemsg);
+                    panel.add(savemsg2);
+
+                    dialog.setResizable(false);
+	                dialog.getContentPane().add(panel);
+	                dialog. setSize(357, 131);
+	                dialog.setLocationRelativeTo(MainWindow.this);
+	                dialog.setVisible(true);
+                }
+                else {
+                	System.exit(0);
+                }
+            }
+        });
+
+		//SAVE AS
+		JMenuItem file_saveas = new JMenuItem("Save As");
+		file_saveas.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				saveas();
+				}
+		});
+
+		file_saveas.setIcon(save);
+		menu_file.add(file_saveas);
+
+		JMenuItem file_exit = new JMenuItem("Force Exit");
+		file_exit.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				System.exit(0);			}
+		});
+		file_exit.setIcon(exitapp);
+		menu_file.add(file_exit);
+
+		//SHORTCUTS
+		file_open.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
+		file_save.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
+		file_saveas.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+		file_exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK));	
+		
+	    textPane.getDocument().addDocumentListener(documentListener);
+
+        System.out.println("MainWindow Constructor responding - STAGE 1 - 3/3");
+        initComponents(); //initComponents Call
+    }
+
+	public static void main(String args[]) {
+		FlatLaf.registerCustomDefaultsSource("style");
+		FlatMacLightLaf.setup();
+		
+		try {
+			UIManager.setLookAndFeel(Laf);
+
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		System.out.println("MainWindow main Function responding - STAGE 1 - 2/3");
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
+			public void run() {
+                new MainWindow().setVisible(true);
+            }
+        });
+	}
+
+	//GENERAL FUNCTIONS
+	public static String upCase(String getText) {
+
+		int len = getText.length();
+		getText=Character.toUpperCase(getText.charAt(0))+getText.substring(1, len);
+		String upcase="";
+		for(i=0; i<len-1; i++) {
+
+			ch=getText.charAt(i);
+			if(i!=len-1) {
+				if(ch==' ' && getText.charAt(i+1) !=' ') {
+
+				ch2=getText.charAt(i+1);
+				upcase=getText.substring(0, i+1)+Character.toUpperCase(ch2)+getText.substring(i+2, len);
+			}
+		}
+		}
+		return upcase;
+	}
+	public void docUp() {
+		textPane.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) {
+                titleSet();
+            }
+            public void removeUpdate(DocumentEvent e) {
+                titleSet();
+            }
+            public void insertUpdate(DocumentEvent e) {
+                titleSet();
+            }
+            //
+        });
+	}
+	public void titleSet() {
+		if(!tglkeymute.isSelected()) {
+		try {
+			Clip clip = AudioSystem.getClip();
+			AudioInputStream inputStream = AudioSystem.getAudioInputStream(typsnd);
+			clip.open(inputStream);
+			clip.start();
+			} catch (Exception e) {}
+		}
+	       
+    	//saved=false;
+    	if(!textPane.getText().equals("")) {
+    		 if(ifile==JFileChooser.APPROVE_OPTION) {
+    			 setTitle("*Snowflakes Editor - "+fileName);
+    		 }
+    		 else {
+    			 setTitle("*Snowflakes Editor");
+    		 }
+    	 }
+    	 else {
+    		 setTitle("Snowflakes Editor");
+    	 }
+    }
+	public void tgTheme(){
+		if (tglTheme.isSelected()) {
+            try {
+                UIManager.setLookAndFeel(new FlatMacDarkLaf());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            try {
+                UIManager.setLookAndFeel(new FlatMacLightLaf());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+        SwingUtilities.updateComponentTreeUI(MainWindow.this);
+	}
+	public void incfont() {
+		Font font = textPane.getFont();
+        float size = font.getSize() + 2.0f;
+        textPane.setFont(font.deriveFont(size));
+        int csize=(int) fontSize.getValue();
+        fontSize.setValue(csize+2);
+	}
+	public void decfont() {
+		Font font = textPane.getFont();
+        float size = font.getSize() - 2.0f;
+        textPane.setFont(font.deriveFont(size));
+        int csize=(int) fontSize.getValue();
+        fontSize.setValue(csize-2);
+	}
+	public void open() {
+		JFileChooser jfile_open=new JFileChooser("Open");
+		jfile_open.setDialogTitle("Snowflakes - Open");
+		ifile= jfile_open.showOpenDialog(null);
+		if(ifile== JFileChooser.APPROVE_OPTION) {
+			file_save.setEnabled(true);
+			bar_save.setEnabled(true);
+		file=new File(jfile_open.getSelectedFile().toString());
+		fileName=file.getName();
+		saved=true;
+		setTitle("Snowflakes Editor - "+fileName);
+		
+		try {
+			FileReader reader = new FileReader(file);
+			BufferedReader b_reader= new BufferedReader(reader);
+			try {
+				textPane.read(b_reader, null);
+				reader.close();
+				b_reader.close();
+				textPane.requestFocus();
+				
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		}
+		else {
+			JOptionPane.showMessageDialog(null, "Uhm, I didn't get any file! \n Please try again! \n ERROR CODE: NOFILE001", "SnowflakesEditor - ERROR - No file selected", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	public void save() {
+		if(ifile==JFileChooser.APPROVE_OPTION) {
+			try {
+		        FileWriter writer = new FileWriter(file);
+		        writer.write(textPane.getText());
+		        writer.close();
+		        saved=true;
+		        setTitle("Snowflakes Editor - "+fileName+" - Saved");
+		    } catch (IOException e1) {
+		        e1.printStackTrace();
+		    }
+			}
+			else {
+				JOptionPane.showMessageDialog(null, "Snowflaked Editor: Uhm, no file is open! \n Please try again! \n ERROR CODE: NOFILE002", "ERROR - No file opened", JOptionPane.ERROR_MESSAGE);
+			}
+	}
+	public void saveas() {
+		JFileChooser Jfile_save = new JFileChooser();
+		Jfile_save.setDialogTitle("Snowflakes - Save As");
+		//FILTER TO TEXT FILE AND DEFAULT FILE NAME
+		Jfile_save.setSelectedFile(new File("TextFile.txt"));
+		Jfile_save.setFileFilter(new FileNameExtensionFilter("Text File", "txt"));
+		int result = Jfile_save.showSaveDialog(null);
+		if (result == JFileChooser.APPROVE_OPTION) {
+			file_save.setEnabled(true);
+			bar_save.setEnabled(true);
+		    file = Jfile_save.getSelectedFile();
+		    ifile=0;
+		    fileName=file.getName();
+		    setTitle("Snowflakes Editor - "+fileName+" - Saved");
+		    
+		    try {
+		        FileWriter writer = new FileWriter(file);
+		        writer.write(textPane.getText());
+		        writer.close();
+		        saved=true;
+		    } catch (IOException e2) {
+		        e2.printStackTrace();
+		    }
+		    
+		}
+	}
+	public void palmpy(String prompt, String guidance) {
+		//PROCESS BUILDER
+		ProcessBuilder processBuilder = new ProcessBuilder("python", "app.py", prompt, guidance);
+        sp_resultPane.setText("");
+        processBuilder.redirectErrorStream(true);
+        Process process;  
+		try {
+			process = processBuilder.start();
+			 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+		        String line;
+		       while ((line = reader.readLine()) != null) {
+		            sp_resultPane.replaceSelection(line+"\n");
+		        }
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	} 
+	public String getFile() {
+		String path="";
+		JFileChooser choose=new JFileChooser("Snowflakes - Select File");
+		choose.setDialogTitle("Snowflakes PDF Extract");
+		choose.setFileFilter(new FileNameExtensionFilter("PDF File", "pdf"));
+		int cfile= choose.showOpenDialog(null);
+		if(cfile== JFileChooser.APPROVE_OPTION) 
+		path = choose.getSelectedFile().toString();
+		else path="null";
+		return path;
+	}
+}
